@@ -1,0 +1,23 @@
+# ============ BlindSpatialAgent 依赖 ============
+# 安装： .venv/bin/pip install -r requirements.txt
+
+# --- Web 服务 / 实时通信 ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+websockets>=13.0
+python-multipart>=0.0.12
+
+# --- 数据建模 / 配置 ---
+pydantic>=2.9.0
+PyYAML>=6.0.2
+
+# --- 图像处理 / iPhone 图片流 ---
+numpy>=1.26.0
+opencv-python>=4.10.0
+
+# --- 多模态大模型接口（OpenAI 兼容）---
+httpx>=0.27.0
+openai>=1.50.0
+
+# --- 终端输出美化 ---
+rich>=13.9.0

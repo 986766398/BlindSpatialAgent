@@ -1,0 +1,425 @@
+# =====================================================================
+# BlindSpatialAgent 全局配置
+# 所有模块只从这里读参数，不把数值写死在代码里。
+# 未来接入真实 UWB / LiDAR / IMU 时，只改本文件的 simulator 段即可。
+# =====================================================================
+
+system:
+  name: "Blind Spatial Agent Simulator"
+  codename: "BSA"
+  version: "0.3.0"
+  timezone: "Asia/Shanghai"
+  tick_hz: 1.0            # 感知-决策主循环频率（Hz），即每秒生成一个 SpatialState
+  log_dir: "logs"
+  log_level: "INFO"       # DEBUG / INFO / WARNING
+  console_banner: true
+
+# ---------------------------------------------------------------------
+# 实时多模态大模型接口（OpenAI 兼容协议）
+# api_key 留空时优先读环境变量 BSA_LLM_API_KEY；
+# 仍然为空则自动降级为本地规则决策（fallback_to_rules），保证系统随时可跑。
+# ---------------------------------------------------------------------
+llm:
+  provider: "openai_compatible"    # openai_compatible | qwen_omni | gpt_realtime | gemini
+  base_url: "https://api.openai.com/v1"
+  api_key: ""
+  model: "gpt-4o-mini"
+  temperature: 0.2
+  max_tokens: 512
+  timeout_s: 30
+  max_retries: 0                   # ★必须显式 0★ openai SDK 默认是 2：一次"30s 超时"最坏变 90s
+  total_deadline_s: 20             # 单轮决策总预算（含工具调用来回），超了就让规则基线兜底
+  enable_tool_calling: true
+  fallback_to_rules: true
+  max_tool_rounds: 3               # 单轮决策最多允许的工具调用轮次
+
+# ---------------------------------------------------------------------
+# iPhone 摄像头接入（阶段二接入真机，阶段一用浏览器网页上传模拟）
+# ---------------------------------------------------------------------
+camera:
+  host: "0.0.0.0"
+  port: 8765
+  latest_image_path: "logs/latest.jpg"
+  save_interval_s: 1.0             # 落盘频率，避免高频写盘
+  max_fps: 8
+  # ↑ 上行限速。**必须比客户端的实际帧率留出余量**（默认取 8，够 App 的 5 fps 用）：
+  #   节流判据是 `now - 上次接受 < 1/max_fps`。若这里也写 5，客户端定时器的
+  #   微小负抖动（间隔 0.199s < 0.200s）就会让该帧被判超速，
+  #   而 _last_accept 不更新 ⇒ 下一帧间隔变成 0.398s 才被接受，
+  #   结果是"每两帧丢一帧"，实际帧率腰斩到 2.5 fps 且现象很隐蔽。
+  jpeg_quality: 60
+  stale_after_s: 3.0               # 超过该秒数没有新帧，视为“无图”
+  max_image_side: 768              # 送模型前的最长边缩放像素
+
+# ---------------------------------------------------------------------
+# 模拟器：室内环境、用户运动、动态障碍、传感器噪声
+# 坐标系：单位米，x 向右（东），y 向前（北）；heading 0°=+y 方向，顺时针为正
+# ---------------------------------------------------------------------
+simulator:
+  map:
+    name: "办公楼-1F"
+    floor: 1
+    bounds: {x_min: 0.0, x_max: 40.0, y_min: 0.0, y_max: 46.0}
+    grid_resolution_m: 0.25        # 占用栅格精度（40x46m → 160x184 格）
+    start: {x: 20.0, y: 4.5, name: "入口", heading_deg: 0.0}
+    destination: "卫生间"
+
+    # 可通行区域（矩形并集）。矩形以外的空间视为墙体。
+    # 相邻矩形只要有一条边贴合，栅格上即自动连通。
+    #
+    # 布局（x 向东、y 向北）：
+    #        ┌─卫生间─┬─会议室─┬─茶水休息区─┐      y=39..45
+    #        └──┬─────┴──┬─────┴────┬───────┘      y=38..39  ← 1m 墙带 + 门洞
+    #   ┌────────────────────────────────────┐
+    #   │            北走廊（东西向）          │      y=34..38
+    #   ├────┬────────────────────────┬──────┤      y=33..34  ← 门洞
+    #   │西  │                        │  东  │
+    #   │走  │      核心办公区         │  走  │      y=13..33
+    #   │廊  │   （工位/空调/沙发）     │  廊  │
+    #   ├────┴────────────────────────┴──────┤      y=12..13  ← 门洞
+    #   │            南走廊（东西向）          │      y=8..12
+    #   └──────────────┬─────────────────────┘
+    #                  │  入口大厅            y=2..8
+    #                  └─ 入口 (20,4.5)        y=0..2
+    #
+    # ★门洞是真实的物理开口★：房间与走廊之间留 1m 厚墙带，只有门洞矩形可通行。
+    #   门宽 2.6m，扣除 motion.path_clearance_m(0.45m) 后仍有约 1.7m 有效通道。
+    #   ⚠️ 门洞是全图最容易"被家具悄悄堵死"的地方 ——
+    #   `tests/selftest.py` 里有专门的连通性用例（房间↔走廊可达 + 门洞有效宽度）
+    #   兜底，改地图后必须跑 `python main.py --selftest`。
+    #   注意方向：门只开在房间的一面墙上（如卫生间门在南墙），
+    #   站在房间里朝其它方向推是**撞墙**，不是"没门" —— 看小地图上的门洞标记。
+    zones:
+      # --- 公共通道 ---
+      - {name: "入口大厅", x_min: 16.0, x_max: 24.0, y_min: 2.0,  y_max: 8.0}
+      - {name: "南走廊",   x_min: 2.0,  x_max: 38.0, y_min: 8.0,  y_max: 12.0}
+      - {name: "西走廊",   x_min: 2.0,  x_max: 6.0,  y_min: 12.0, y_max: 38.0}
+      - {name: "东走廊",   x_min: 34.0, x_max: 38.0, y_min: 12.0, y_max: 38.0}
+      - {name: "北走廊",   x_min: 2.0,  x_max: 38.0, y_min: 34.0, y_max: 38.0}
+      # --- 中央开放办公区 ---
+      - {name: "核心办公区", x_min: 7.0, x_max: 33.0, y_min: 13.0, y_max: 33.0}
+      # --- 门洞（1m 厚墙带上的开口） ---
+      #   ★每个房间/办公区至少有一个直通走廊的门★，门洞中心保持不变（用例依赖它）。
+      - {name: "办公区南门", x_min: 18.7, x_max: 21.3, y_min: 12.0, y_max: 13.0}
+      - {name: "办公区北门", x_min: 18.7, x_max: 21.3, y_min: 33.0, y_max: 34.0}
+      - {name: "办公区西门", x_min: 6.0,  x_max: 7.0,  y_min: 21.7, y_max: 24.3}
+      - {name: "办公区东门", x_min: 33.0, x_max: 34.0, y_min: 21.7, y_max: 24.3}
+      - {name: "卫生间门口", x_min: 10.2, x_max: 12.8, y_min: 38.0, y_max: 39.0}
+      - {name: "会议室门口", x_min: 18.7, x_max: 21.3, y_min: 38.0, y_max: 39.0}
+      - {name: "茶水间门口", x_min: 27.7, x_max: 30.3, y_min: 38.0, y_max: 39.0}
+      # --- 独立房间（门洞通往走廊） ---
+      - {name: "卫生间",     x_min: 8.0,  x_max: 14.0, y_min: 39.0, y_max: 45.0}
+      - {name: "会议室",     x_min: 17.0, x_max: 23.0, y_min: 39.0, y_max: 45.0}
+      - {name: "茶水休息区", x_min: 26.0, x_max: 32.0, y_min: 39.0, y_max: 45.0}
+
+    # 全局路线点（NavMesh 风格）：入口 → 大厅 → 南走廊 → 办公区 → 北走廊 → 卫生间
+    route_landmarks:
+      - {name: "入口",       x: 20.0, y: 4.5}
+      - {name: "入口大厅",   x: 20.0, y: 7.0}
+      - {name: "南走廊",     x: 20.0, y: 10.0}
+      - {name: "核心办公区", x: 20.0, y: 22.0}
+      - {name: "北走廊",     x: 20.0, y: 36.0}
+      - {name: "卫生间门口", x: 11.5, y: 38.5}
+      - {name: "卫生间",     x: 11.5, y: 42.0}
+
+    # 静态语义物体
+    #   blocking=true  -> 同时写入占用栅格，会真实挡住去路
+    #   blocking=false -> 只是语义地标（门/路人/壁挂空调），只进 semantic_scene
+    static_objects:
+      # --- 核心办公区：8 组工位（办公桌 + 办公椅），中央 x=20 留出通行带 ---
+      - {type: "desk",  x: 9.5,  y: 17.0, radius: 0.75, blocking: true}
+      - {type: "chair", x: 9.5,  y: 15.9, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 13.5, y: 17.0, radius: 0.75, blocking: true}
+      - {type: "chair", x: 13.5, y: 15.9, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 9.5,  y: 25.5, radius: 0.75, blocking: true}
+      - {type: "chair", x: 9.5,  y: 24.4, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 13.5, y: 25.5, radius: 0.75, blocking: true}
+      - {type: "chair", x: 13.5, y: 24.4, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 25.5, y: 17.0, radius: 0.75, blocking: true}
+      - {type: "chair", x: 25.5, y: 15.9, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 29.5, y: 17.0, radius: 0.75, blocking: true}
+      - {type: "chair", x: 29.5, y: 15.9, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 25.5, y: 25.5, radius: 0.75, blocking: true}
+      - {type: "chair", x: 25.5, y: 24.4, radius: 0.30, blocking: true}
+      - {type: "desk",  x: 29.5, y: 25.5, radius: 0.75, blocking: true}
+      - {type: "chair", x: 29.5, y: 24.4, radius: 0.30, blocking: true}
+      # --- 壁挂空调（不挡路，只做语义地标） ---
+      - {type: "ac", x: 7.6,  y: 13.6, radius: 0.25, blocking: false}
+      - {type: "ac", x: 32.4, y: 13.6, radius: 0.25, blocking: false}
+      - {type: "ac", x: 7.6,  y: 32.4, radius: 0.25, blocking: false}
+      - {type: "ac", x: 32.4, y: 32.4, radius: 0.25, blocking: false}
+      # --- 茶水休息区：茶几 + 饮水机 + 空调（沙发改成下面的 sofa_zone 区域障碍）---
+      - {type: "coffee_table", x: 29.0, y: 42.0, radius: 0.45, blocking: true}
+      - {type: "water_dispenser", x: 26.6, y: 40.2, radius: 0.35, blocking: true}
+      - {type: "ac", x: 31.5, y: 39.7, radius: 0.25, blocking: false}
+      # --- 卫生间：洗手台 + 两个隔间 ---
+      - {type: "sink",   x: 13.4, y: 40.2, radius: 0.45, blocking: true}
+      - {type: "toilet", x: 8.8,  y: 44.0, radius: 0.40, blocking: true}
+      - {type: "toilet", x: 11.2, y: 44.0, radius: 0.40, blocking: true}
+      # --- 会议室：会议桌 + 四把椅子 ---
+      - {type: "conference_table", x: 20.0, y: 42.5, radius: 1.20, blocking: true}
+      - {type: "chair", x: 18.2, y: 41.6, radius: 0.30, blocking: true}
+      - {type: "chair", x: 21.8, y: 41.6, radius: 0.30, blocking: true}
+      - {type: "chair", x: 18.2, y: 43.4, radius: 0.30, blocking: true}
+      - {type: "chair", x: 21.8, y: 43.4, radius: 0.30, blocking: true}
+      # --- 门口 / 路人 / 绿植（语义物体） ---
+      - {type: "door",   x: 20.0, y: 12.5, radius: 0.15, blocking: false}
+      - {type: "door",   x: 20.0, y: 33.5, radius: 0.15, blocking: false}
+      - {type: "door",   x: 6.5,  y: 23.0, radius: 0.15, blocking: false}
+      - {type: "door",   x: 33.5, y: 23.0, radius: 0.15, blocking: false}
+      - {type: "door",   x: 11.5, y: 38.5, radius: 0.15, blocking: false}
+      - {type: "door",   x: 20.0, y: 38.5, radius: 0.15, blocking: false}
+      - {type: "door",   x: 29.0, y: 38.5, radius: 0.15, blocking: false}
+      - {type: "person", x: 20.0, y: 29.0, radius: 0.30, blocking: false}
+      - {type: "plant",  x: 17.2, y: 13.8, radius: 0.35, blocking: false}
+      - {type: "plant",  x: 22.8, y: 13.8, radius: 0.35, blocking: false}
+      # --- 少量点状障碍（走廊两侧，主干道保持通畅） ---
+      #   ⚠️ 两条硬约束：
+      #     ① 全部避开中央通行带 x∈[18,22]：验收 Demo 第 2 拍要求"12 秒直行 >6m"，
+      #        在主干道上摆障碍会让它变成"边走边绕"，把直行剧本测坏。
+      #     ② ★数量要克制★：静态障碍不进"寿命"机制，摆下去就是永久的。
+      #        上一版一口气加了 10 个，结果整条路线处处要绕，Agent 只能反复
+      #        减速/停步/重规划，用户听到的就是"障碍太多了"。现在只留 4 个，
+      #        每处都在主干道之外的走廊里。
+      - {type: "bin",   x: 3.4,  y: 30.0, radius: 0.30, blocking: true}    # 西走廊垃圾桶
+      - {type: "bin",   x: 36.6, y: 16.0, radius: 0.30, blocking: true}    # 东走廊垃圾桶
+      - {type: "box",   x: 35.5, y: 33.2, radius: 0.40, blocking: true}    # 东走廊纸箱
+      - {type: "box",   x: 24.2, y: 30.4, radius: 0.40, blocking: true}    # 办公区东侧纸箱
+
+    # ★区域型障碍（矩形）★ —— 与 static_objects 同样真实挡住去路、进占用栅格与避障。
+    #   为什么需要它：施工围挡、储物柜墙、沙发组、工位岛这类障碍是"一整片区域"，
+    #   用圆形近似会严重失真 —— 6m×1m 的围挡会被画成半径 3m 的大圆，
+    #   于是走廊中间凭空多出一堵圆墙，用户贴着围挡走时系统却报"距离 3 米"。
+    #   写法：x_min/x_max/y_min/y_max（轴对齐矩形），框架会自动换算成"中心+半宽半高"。
+    #   ⚠️ 放之前先想清楚"剩下多宽能过人"：可通行宽度需 > 2×path_clearance_m(0.45m)。
+    #   ⚠️ 数量要克制★：区域障碍是"一整片"，摆多了会把可通行路径切得七零八落，
+    #   于是 Agent 只能不停地绕行/减速/停步，用户听到的就是"障碍太多、一直在重规划"。
+    #   当前保留 4 处、分散在四条走廊／休息区，主干道（中央 x∈[18,22]）全程无遮挡。
+    area_objects:
+      - {type: "cordon",       x_min: 23.5, x_max: 30.5, y_min: 8.4,  y_max: 9.9,  blocking: true}  # 南走廊东段施工围挡
+      - {type: "cabinet",      x_min: 2.2,  x_max: 3.0,  y_min: 16.0, y_max: 24.0, blocking: true}  # 西走廊储物柜墙
+      - {type: "sofa_zone",    x_min: 26.4, x_max: 31.6, y_min: 43.0, y_max: 44.6, blocking: true}  # 茶水休息区沙发组
+      - {type: "desk_island",  x_min: 8.8,  x_max: 15.0, y_min: 29.2, y_max: 31.2, blocking: true}  # 办公区西北工位岛
+
+  motion:
+    walk_speed_mps: 1.1            # 盲人使用盲杖时的常规步速
+    slow_speed_mps: 0.4            # 环境变窄/障碍接近时的减速步速
+    stop_distance_m: 0.45          # 前方障碍近于此距离则停止前进
+    slow_distance_m: 1.20          # 前方障碍近于此距离则减速
+    arrive_radius_m: 0.60          # 距离路点小于该值视为到达
+    path_clearance_m: 0.45         # 规划路径与墙体保持的安全间隙（防止贴墙/切墙角）
+    replan_deviation_m: 1.00       # 偏离已规划路径超过该距离就重规划
+    heading_noise_deg: 3.0
+    replan_on_blocked: true
+
+  obstacles:
+    enabled: true
+    # ★这一节决定"路上有多热闹"，也是"障碍太多"最直接的旋钮★
+    #   动态障碍会生成在用户正前方 2.5~5.5m 的 ±40° 锥内 —— 也就是说**专门挡在前进方向上**。
+    #   上一版是 max_active=4 / 间隔 6s / 寿命 6~18s：实测平均同时在路 3 个以上，
+    #   用户每走两步就被安全层按住一次（一次 3 分钟的实测里停步播报 159 次）。
+    #   现在降为 max_active=2 / 间隔 10s / 寿命 5~12s，环境仍在变化，但不再"处处是障碍"。
+    spawn_interval_s: 10.0         # 平均每隔多久触发一次环境变化
+    max_active: 2                  # 同时存在的动态障碍上限
+    lifetime_s: [5.0, 12.0]        # 动态障碍存活时间区间
+    #   ⚠️ 刻意去掉 narrow_passage：它一次生成**左右两个**障碍来"人为制造窄缝"，
+    #   是本项目里最像"系统故意堵路"的一类事件（会同时触发"通道变窄"提醒 +
+    #   两次停步）。自检用例 11 仍可用 `spawn(kind="narrow_passage")` 单测这条逻辑。
+    types: ["chair", "person", "box"]
+    move_speed_mps: [0.0, 0.9]     # 0 表示静止障碍（如被推入的椅子）
+    narrow_passage_width_m: 0.6    # 通道变窄事件的有效通道宽度（types 里启用该类型时才生效）
+    clear_range_m: 1.5             # 前方 < 该距离算“不清空”
+
+  sensors:
+    uwb_noise_m: 0.15              # 定位高斯噪声（模拟 UWB）
+    heading_noise_deg: 2.0         # IMU 朝向噪声
+    lidar_range_m: 5.0             # 前向深度有效距离
+    lidar_noise_m: 0.05
+    lidar_fov_deg: 70.0            # 障碍检测视场角（±35° 内的物体算“正前方”）
+    front_wall_fov_deg: 20.0       # 判断“前方是否被墙堵死”用的窄视场（±10°）
+    side_fov_deg: 45.0             # 侧向视场角
+    side_obstacle_range_m: 1.0     # 侧向物体近于此距离才算“侧方有障碍”
+    drop_frame_prob: 0.02          # 模拟丢帧
+
+# ---------------------------------------------------------------------
+# Agent：风险阈值与交互策略
+# ---------------------------------------------------------------------
+agent:
+  risk:
+    critical_distance_m: 0.35      # 障碍 < 0.35m 判为 critical
+    high_distance_m: 0.70          # < 0.7m 判为 high
+    medium_distance_m: 1.50        # < 1.5m 判为 medium
+    narrow_corridor_m: 0.8         # 通道宽度 < 0.8m 视为狭窄
+  speak_policy:
+    min_interval_s: 4.0            # 语音提醒最小间隔，避免频繁打扰
+    max_length_chars: 40           # 单句导航提示最长字数
+    urgent_bypass_interval: true   # 高风险时可突破间隔限制
+  memory:
+    max_turns: 30                  # 记忆窗口（对话+行动）
+    keep_events: 50                # 空间事件保留条数
+  confidence:
+    min_localization: 0.4          # 低于该值提示用户原地确认
+  # -------------------------------------------------------------------
+  # 主动感知（Stage 10）：什么时候"该看一眼"。
+  # 任务书要求：只有 ① 事件需要视觉 ② 置信度不足 ③ 用户问环境 时才取帧，
+  # **不要每轮都上传图片**。这一整段就是那三件事的旋钮。
+  # -------------------------------------------------------------------
+  perception:
+    # always    = 有帧就附（v0.2 行为，回归对照）
+    # auto      = 有帧就附，但**同时**判定"是否真的需要"并登记一次取帧请求（默认，兼容）
+    # on_demand = 只在需要时才附图（省 token / 省带宽，真实部署推荐）
+    # never     = 永不带图（纯文本对照实验）
+    mode: auto
+    localization_confidence_min: 0.60   # 定位置信度低于此值 → 想看一眼
+    perception_confidence_min: 0.50     # 感知置信度低于此值 → 想看一眼
+    camera_stale_after_s: 3.0           # 画面老于此值 → 想看一眼
+    min_interval_s: 2.0                 # 自动触发的取帧节流（用户提问/工具显式请求豁免）
+    event_window_s: 8.0                 # "最近多久内的事件"还算数（认知循环本身是节流的）
+    # 哪些事件类型"必须看一眼"才能定论（留空 = 用代码里的默认表）
+    visual_event_types:
+      - MAP_SENSOR_CONFLICT
+      - LOW_LOCALIZATION_CONFIDENCE
+      - OBSTACLE_APPEARED
+      # 以下两条为预留：EventType 枚举中暂无同名事件，不会命中（详见 docs/EVENT_SYSTEM.md）
+      - OBSTACLE_DISAPPEARED
+      - NARROW_PASSAGE_DETECTED
+      - CAMERA_LOST
+      - ROUTE_DEVIATION
+    # 用户提问里出现这些词 → 判定为"在问环境"（"还有多远"不算，那是问路线）
+    env_query_keywords:
+      - 前面
+      - 前方
+      - 周围
+      - 环境
+      - 看到
+      - 画面
+      - 什么样
+      - 是什么
+      - 有什么
+      - 旁边
+      - 附近
+      - 左边
+      - 右边
+      - 脚下
+  loop:
+    max_ticks: 0                   # 0 = 无限循环（Ctrl+C 退出）
+
+# ---------------------------------------------------------------------
+# 融合层（Stage 4）：新鲜度判定 + 置信度估计
+# ★这两段是"Agent 敢不敢信数据"的全部旋钮，不要在代码里再写死数值★
+# ---------------------------------------------------------------------
+fusion:
+  freshness:
+    # 每个通道"多久没更新就算过期"。过期 ≠ 缺失：
+    #   过期（stale）要降置信度、可能报警；缺失（missing）静默降级。
+    pose_stale_s: 0.5              # UWB 10Hz 级别
+    depth_stale_s: 0.5             # LiDAR 30Hz 级别
+    navigation_stale_s: 2.0        # 规划器是慢变量
+    semantic_stale_s: 5.0
+    map_stale_s: null              # 静态知识永不过期（null = 永不）
+    # 注意：camera 的阈值不在这里配，统一取上面 camera.stale_after_s，
+    # 避免"相机层算新鲜、融合层算过期"的自相矛盾。
+  confidence:
+    mode: "estimated"              # estimated（默认）| fixed（回退到 v0.2 的常量为对比基线）
+    localization:
+      base: 0.95                   # 一切正常时的上限
+      fixed_value: 0.90            # mode=fixed 时使用的常量（= v0.2 行为）
+      noise_ref_m: 0.30            # 噪声小于该值不扣分（默认 0.15m 噪声 → 满分）
+      noise_span_m: 1.20           # 噪声从 noise_ref 涨到 ref+span 时该项扣满
+      innovation_ref: 2.50         # 实测残差 / 期望噪声 达到该倍数时该项扣满是
+      w_noise: 0.45                # 三项权重（和为 1.0）
+      w_innov: 0.40
+      w_fresh: 0.15
+      window: 12                   # 残差滑动窗口（轮）
+      floor: 0.05                  # 置信度下限（0 会让下游按 0 处理，掩盖问题）
+
+# ---------------------------------------------------------------------
+# 事件引擎（Stage 6）：状态迁移去重的"冷却"旋钮
+# 键名 = EventType 的字符串值（大写，见 events/event_types.py）。
+# 未列出的类型沿用代码默认值 —— 但**默认值本身就是这里的值**，
+# 两边不一致时以本文件为准（代码默认只作为"配置缺失时的兜底"）。
+# ★critical 事件不受冷却约束★：冷却防的是噪音，不是危险。
+# ---------------------------------------------------------------------
+events:
+  history_len: 300                 # 内存保留的事件条数（总线工作集 + 存档各一份）
+  cooldown_s:
+    USER_COMMAND: 0.0              # 用户指令：每次都要处理，不冷却
+    USER_QUESTION: 0.0             # 用户提问：同上
+    OBSTACLE_APPEARED: 2.0
+    OBSTACLE_CLEARED: 2.0
+    OBSTACLE_APPROACHING: 1.5
+    ROUTE_DEVIATION: 5.0
+    ROUTE_BLOCKED: 5.0
+    GOAL_REACHED: 0.0              # 到达只发生一次，冷却无意义
+    TURN_APPROACHING: 8.0
+    LOW_LOCALIZATION_CONFIDENCE: 30.0
+    LOW_PERCEPTION_CONFIDENCE: 30.0
+    CAMERA_LOST: 10.0
+    CAMERA_RECOVERED: 0.0
+    MAP_SENSOR_CONFLICT: 10.0
+    SCENE_CHANGED: 5.0
+    HIGH_RISK: 1.0
+
+# ---------------------------------------------------------------------
+# 双循环（Stage 7）：高速安全循环 + 低速认知循环
+# ★这是"禁止每帧调用 LLM"与"LLM 卡住也不能丢安全"的实现参数★
+# ---------------------------------------------------------------------
+safety:
+  critical_distance_m: null        # null = 沿用 agent.risk.critical_distance_m
+  high_distance_m: null            # null = 沿用 agent.risk.high_distance_m
+  narrow_width_m: 0.9              # 可通行宽度低于该值算"通道变窄"
+  min_perception_confidence: 0.5   # 感知置信度低于该值 → 安全层记一笔（不打断用户）
+  dropoff_is_emergency: true       # 坠落风险一律按最高优先级处理（不可恢复的事故）
+  stairs_is_warning: true
+  camera_loss_is_safety: false     # 摄像头断流**不算**安全问题：导航必须继续（验收 Demo 要求）
+
+cognitive:
+  enabled: true                    # 关掉则完全回到"规则模式"，进程内不建线程
+  heartbeat_s: 5.0                 # 没有事件时每隔多久强制想一次（1 Hz 会退化成"每秒思考"）
+  min_interval_s: 2.0              # 两次认知之间的最小间隔（防事件风暴）
+  result_ttl_s: 4.0                # 认知结果的保鲜期：算完 4 秒后才用上就太晚了
+  query_timeout_s: 3.0             # 用户提问后等大模型多久，超时由规则基线抢答
+  event_summary_n: 5               # 写进提示词的事件摘要条数
+  history_n: 6                     # 写进提示词的对话轮数
+
+# ---------------------------------------------------------------------
+# 交互策略（Stage 8）：说不说 / 说多少 / 用什么方式
+# ★这一节只作用于**大模型输出**（非确定路径）。规则基线的两道闸
+#   （重复 / 最小间隔）由 agent.speak_policy 决定，语义与 v0.2 一致，
+#   所以下面的开关怎么调都不会改变确定性回归的轨迹。★
+# ---------------------------------------------------------------------
+interaction:
+  quiet_when_cruising: true        # 连续直行且无事件时保持安静（任务书第十节的例子）
+  cruise_quiet_after_s: 20.0       # 连续直行超过该秒数才进入"巡航静默"（前 20 秒该说还得说）
+  silence_when_user_speaks: true   # 用户正在说话时不打断（安全类行动豁免）
+  min_confidence: 0.35             # 模型自评置信度低于该值：只记控制台，不打扰用户
+  console_alert: true              # 是否允许"只记录不发声"的通道
+  channels:                        # 通道开关（预留 HAPTIC / AUDIO_CUE，当前默认关闭）
+    voice: true
+    console_alert: true
+    haptic: false
+    audio_cue: false
+
+# ---------------------------------------------------------------------
+# WebSocket / FastAPI 服务
+# ---------------------------------------------------------------------
+api:
+  host: "0.0.0.0"
+  port: 8000
+  ws_path: "/ws/agent"             # Agent 状态推送 + 用户指令上行
+  ws_image_path: "/ws/camera"      # iPhone 图片上行
+  enable_cors: true
+
+# ---------------------------------------------------------------------
+# 录制 / 回放（Stage 9）
+# 任务书：一次真实盲人实验要能反复回放 —— 换模型 / 换 Prompt / 换 policy。
+# 目录结构：recordings/session_YYYYMMDD_HHMMSS/{states,events,actions,llm}.jsonl
+#           + images/ + meta.json + map.json
+# ★不保存隐藏思维链，只存结构化决策与可公开的 reason★（见 recording/schemas.py）
+# ---------------------------------------------------------------------
+recording:
+  root: "recordings"               # 会话根目录（--record 可覆盖）
+  # 画面单独落盘（不进 JSONL）。1 Hz × 3 个调用点 ≈ 小时级几十 MB，
+  # 长实验建议 `--no-images`（元数据仍会记录"当时有没有图"）。
+  keep_images: true
+  max_images: 2000                 # 画面张数上限（防呆：长期跑不要把磁盘写满）

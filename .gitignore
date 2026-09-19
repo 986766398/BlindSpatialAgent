@@ -1,0 +1,42 @@
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 运行产物（图片流与日志不入库）
+logs/*.jpg
+logs/*.jpeg
+logs/*.png
+logs/*.log
+logs/*.mp4
+
+# 密钥
+.env
+*.key
+
+# 录制会话（Stage 9）：含真实实验画面，体积大且可能含隐私，只保留目录占位
+recordings/
+!recordings/.gitkeep
+
+# 系统文件
+.DS_Store
+
+# iOS 构建产物（DerivedData / 模拟器索引，体积大且可再生）
+ios/**/build-sim/
+ios/**/build/
+ios/**/DerivedData/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# 交付打包输出
+dist/
+
+# 运行产物补充
+logs/*.jsonl
+logs/*.json

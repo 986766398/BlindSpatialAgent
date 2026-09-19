@@ -1,0 +1,288 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA11BB22CC33DD44EE55FF01 /* BSACameraStreamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF11 /* BSACameraStreamerApp.swift */; };
+		AA11BB22CC33DD44EE55FF02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF12 /* ContentView.swift */; };
+		AA11BB22CC33DD44EE55FF03 /* CameraCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF13 /* CameraCaptureService.swift */; };
+		AA11BB22CC33DD44EE55FF04 /* FrameStreamClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF14 /* FrameStreamClient.swift */; };
+		AA11BB22CC33DD44EE55FF05 /* StreamViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF15 /* StreamViewModel.swift */; };
+		AA11BB22CC33DD44EE55FF06 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF18 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA11BB22CC33DD44EE55FF11 /* BSACameraStreamerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BSACameraStreamerApp.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF12 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF13 /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureService.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF14 /* FrameStreamClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameStreamClient.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF15 /* StreamViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamViewModel.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF17 /* BSACameraStreamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BSACameraStreamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA11BB22CC33DD44EE55FF18 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA11BB22CC33DD44EE55FF31 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA11BB22CC33DD44EE55FF21 = {
+			isa = PBXGroup;
+			children = (
+				AA11BB22CC33DD44EE55FF22 /* BSACameraStreamer */,
+				AA11BB22CC33DD44EE55FF23 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF22 /* BSACameraStreamer */ = {
+			isa = PBXGroup;
+			children = (
+				AA11BB22CC33DD44EE55FF11 /* BSACameraStreamerApp.swift */,
+				AA11BB22CC33DD44EE55FF12 /* ContentView.swift */,
+				AA11BB22CC33DD44EE55FF15 /* StreamViewModel.swift */,
+				AA11BB22CC33DD44EE55FF13 /* CameraCaptureService.swift */,
+				AA11BB22CC33DD44EE55FF14 /* FrameStreamClient.swift */,
+				AA11BB22CC33DD44EE55FF18 /* Assets.xcassets */,
+				AA11BB22CC33DD44EE55FF16 /* Info.plist */,
+			);
+			path = BSACameraStreamer;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF23 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA11BB22CC33DD44EE55FF17 /* BSACameraStreamer.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA11BB22CC33DD44EE55FF41 /* BSACameraStreamer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA11BB22CC33DD44EE55FF62 /* Build configuration list for PBXNativeTarget "BSACameraStreamer" */;
+			buildPhases = (
+				AA11BB22CC33DD44EE55FF32 /* Sources */,
+				AA11BB22CC33DD44EE55FF31 /* Frameworks */,
+				AA11BB22CC33DD44EE55FF33 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BSACameraStreamer;
+			productName = BSACameraStreamer;
+			productReference = AA11BB22CC33DD44EE55FF17 /* BSACameraStreamer.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA11BB22CC33DD44EE55FF42 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					AA11BB22CC33DD44EE55FF41 = {
+						CreatedOnToolsVersion = 26.0;
+						DevelopmentTeam = Q6LSLN3RJ5;
+					};
+				};
+			};
+			buildConfigurationList = AA11BB22CC33DD44EE55FF61 /* Build configuration list for PBXProject "BSACameraStreamer" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA11BB22CC33DD44EE55FF21;
+			productRefGroup = AA11BB22CC33DD44EE55FF23 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA11BB22CC33DD44EE55FF41 /* BSACameraStreamer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA11BB22CC33DD44EE55FF33 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA11BB22CC33DD44EE55FF06 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA11BB22CC33DD44EE55FF32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA11BB22CC33DD44EE55FF01 /* BSACameraStreamerApp.swift in Sources */,
+				AA11BB22CC33DD44EE55FF05 /* StreamViewModel.swift in Sources */,
+				AA11BB22CC33DD44EE55FF02 /* ContentView.swift in Sources */,
+				AA11BB22CC33DD44EE55FF03 /* CameraCaptureService.swift in Sources */,
+				AA11BB22CC33DD44EE55FF04 /* FrameStreamClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA11BB22CC33DD44EE55FF51 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA11BB22CC33DD44EE55FF52 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA11BB22CC33DD44EE55FF53 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q6LSLN3RJ5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BSACameraStreamer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bsa.spatialeye;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AA11BB22CC33DD44EE55FF54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q6LSLN3RJ5;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BSACameraStreamer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bsa.spatialeye;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA11BB22CC33DD44EE55FF61 /* Build configuration list for PBXProject "BSACameraStreamer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA11BB22CC33DD44EE55FF51 /* Debug */,
+				AA11BB22CC33DD44EE55FF52 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA11BB22CC33DD44EE55FF62 /* Build configuration list for PBXNativeTarget "BSACameraStreamer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA11BB22CC33DD44EE55FF53 /* Debug */,
+				AA11BB22CC33DD44EE55FF54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AA11BB22CC33DD44EE55FF42 /* Project object */;
+}

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleDisplayName</key>
+	<string>BSA 之眼</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>BSA 之眼</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!-- 摄像头权限：必须声明，否则 AVCaptureDevice 直接返回未授权 -->
+	<key>NSCameraUsageDescription</key>
+	<string>BlindSpatialAgent 需要后置摄像头画面，以每秒 1 帧 JPEG 的方式发送到同一局域网内的电脑（Python 服务端），用于视障室内导航 Agent 的实时环境感知测试。</string>
+
+	<!-- iOS 14+ 访问局域网设备需要此声明，否则连接 192.168.x.x 会直接失败 -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>需要访问本地局域网，才能把摄像头画面通过 WebSocket 发送到运行 Python 服务端的电脑。</string>
+
+	<!--
+	  ATS 例外：服务端是明文 ws://（局域网 IP，没有 TLS 证书）。
+	  开发原型必须放开，否则 URLSession 会拒绝连接。
+	  仅限内网联调使用；正式产品应改为 wss:// + 自签/公信证书。
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>

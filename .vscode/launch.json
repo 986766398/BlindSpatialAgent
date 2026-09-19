@@ -1,0 +1,74 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // ★看实时面板就用这个★
+      // 启动 FastAPI + WebSocket 服务，然后浏览器打开 http://127.0.0.1:8000/
+      // 面板里有：小地图（A* 路径/动态障碍）、行动流（模型决策原文）、
+      //           摄像头画面、大模型诊断、用户提问、暂停/重置。
+      // 停止：点调试工具栏的红色方块（或终端里 Ctrl+C）。
+      "name": "BSA: 服务模式（实时面板）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": ["--serve"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        // 本机若设了 HTTP_PROXY，访问 127.0.0.1 必须绕过，否则会被代理以 502 拒绝
+        "NO_PROXY": "127.0.0.1,localhost,::1",
+        "no_proxy": "127.0.0.1,localhost,::1"
+      },
+      "justMyCode": true
+    },
+    {
+      // 换端口起服务（默认 8000 被占用时用），面板地址改为 http://127.0.0.1:8010/
+      "name": "BSA: 服务模式（端口 8010）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": ["--serve", "--port", "8010"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NO_PROXY": "127.0.0.1,localhost,::1",
+        "no_proxy": "127.0.0.1,localhost,::1"
+      },
+      "justMyCode": true
+    },
+    {
+      // 全套自检 75 项（离线、确定、约 12 秒）。改完代码先跑这个。
+      "name": "BSA: 自检（75 项）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": ["--selftest"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NO_PROXY": "127.0.0.1,localhost,::1",
+        "no_proxy": "127.0.0.1,localhost,::1"
+      },
+      "justMyCode": true
+    },
+    {
+      // 不开服务，只在终端里跑一段看 Agent 边走边说话（约 60 秒）
+      "name": "BSA: 终端演示（60 轮）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": ["--ticks", "60", "--brief", "--seed", "42"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NO_PROXY": "127.0.0.1,localhost,::1",
+        "no_proxy": "127.0.0.1,localhost,::1"
+      },
+      "justMyCode": true
+    }
+  ]
+}
